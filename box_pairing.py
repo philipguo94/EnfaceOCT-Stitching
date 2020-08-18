@@ -47,7 +47,7 @@ def box_pairing(im1, im2, ks, step_interval1, step_interval2):
             if np.sum(im1[i:i + ks, j:j + ks]) / 255 > 200:
                 for m in range(0, len(im2) - ks, step_interval2):
                     for k in range(0, int(len(im2[0]) / 2), step_interval2):
-                        if np.sum(im2[m:m + ks, k:k + ks]) / 255 > 200:
+                        if np.sum(im2[m:m + ks, k:k + ks]) / 255 > 200 and (len(im1[0]) - j + k) < int(len(im1[0])/2):
                             cc = correlation_coefficient(im1[i:i + ks, j:j + ks], im2[m:m + ks, k:k + ks])
                             ls = normalized_least_squares(im1[i:i + ks, j:j + ks], im2[m:m + ks, k:k + ks])
                             if cc > max_cc:

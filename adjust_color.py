@@ -85,18 +85,13 @@ def adjust_color(scr, img0):
     scr = clahe.apply(scr)
     img = clahe.apply(img)
 
-    cv2.imshow("origin", img0)
-    cv2.imshow("target", scr)
-    cv2.imshow("result", img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    return cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 
+if __name__ == '__main__':
+    img1_path = str('D:\Code\Rota_stitching\Export GEN Extracted HiMy 20200521\CMC 637_20170703_110246_R_Mac\CMC 637_20170703_110246_R_RMapEnSumRNFL_3Resized.png').replace('\\\\', '\\')
+    img2_path = str('D:\Code\Rota_stitching\Export GEN Extracted HiMy 20200521\CMC 637_20170703_110757_R_Opt\CMC 637_20170703_110757_R_RMapEnSumRNFL_3Resized.png').replace('\\\\', '\\')
 
+    scr = cv2.imread(img1_path)
+    img0 = cv2.imread(img2_path)
 
-img1_path = str('D:\Code\Rota_stitching\Export GEN Extracted HiMy 20200521\CMC 637_20170703_110246_R_Mac\CMC 637_20170703_110246_R_RMapEnSumRNFL_3Resized.png').replace('\\\\', '\\')
-img2_path = str('D:\Code\Rota_stitching\Export GEN Extracted HiMy 20200521\CMC 637_20170703_110757_R_Opt\CMC 637_20170703_110757_R_RMapEnSumRNFL_3Resized.png').replace('\\\\', '\\')
-
-scr = cv2.imread(img1_path)
-img0 = cv2.imread(img2_path)
-
-adjust_color(scr, img0)
+    adjust_color(scr, img0)

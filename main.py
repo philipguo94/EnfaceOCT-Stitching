@@ -14,7 +14,8 @@ from numpy import float32
 import matplotlib.pyplot as plt
 from scipy.signal import correlate
 from Rota_stitching.box_pairing import box_pairing
-from Rota_stitching.extract_vessel import extract_vessel_from_oct
+from Rota_stitching.extract_vessel import extract_vessel_from_oct, extract_vessel_from_oct_origin
+from Rota_stitching.adjust_color import adjust_color
 
 
 def skimage2opencv(src):
@@ -105,8 +106,9 @@ if __name__ == '__main__':
                     img_list = [path + each_image_paths[1], path + each_image_paths[3]]
                     for i in range(len(img_list)):
                         img = cv2.imread(img_list[i])
-                        newfin = extract_vessel_from_oct(img)
+                        newfin = extract_vessel_from_oct_origin(img)
                         mac_opt_vessel_imgs.append(newfin)
+
                     """
                     Step 2:
                     Features searching
@@ -125,8 +127,17 @@ if __name__ == '__main__':
                     """
 
                     imgs = []
+
                     img1 = cv2.imread(path + each_image_paths[0])
                     img2 = cv2.imread(path + each_image_paths[2])
+
+
+                    # adjust the color
+                    if np.sum(img1) < np.sum(img2):
+                        img2 = adjust_color(img1, img2)
+                    else:
+                        img1 = adjust_color(img2, img1)
+
                     imgs = [img1, img2]
                     x1 = 100
                     y1 = 100
@@ -144,7 +155,31 @@ if __name__ == '__main__':
                         canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
                         x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
                         canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
-                    cv2.imwrite("./result/" + each_image_paths[4] + "stitched.jpg", canvas)
+                    cv2.imwrite("./result/" + each_image_paths[4] + "stitched_adjusted.jpg", canvas)
+
+                    ### temp compare, no color adjust
+
+                    img1 = cv2.imread(path + each_image_paths[0])
+                    img2 = cv2.imread(path + each_image_paths[2])
+
+                    imgs = [img1, img2]
+                    x1 = 100
+                    y1 = 100
+                    x2 = 100 + len(imgs[0])
+                    y2 = 100
+
+                    x_movestep = moving_coors[3] + (len(imgs[0][0]) - moving_coors[1])
+                    y_movestep = moving_coors[0] - moving_coors[2]
+                    canvas = np.ones((800, 600, 3), dtype=np.uint8) * 255
+                    if "_L_" in each_image_paths[4]:
+                        canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
+                        canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
+                        x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
+                    else:
+                        canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
+                        x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
+                        canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
+                    cv2.imwrite("./result/" + each_image_paths[4] + "stitched_noadjusted.jpg", canvas)
 
                 except:
                     print("error names", each_image_paths[4])

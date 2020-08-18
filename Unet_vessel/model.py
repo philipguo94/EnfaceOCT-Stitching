@@ -102,25 +102,25 @@ def FCRN_A_base_v2(input):
     return block7
 
 def U_net_base(input, nb_filter = 64):
-    block1 = _conv_bn_relu_x2(64,3,3)(input)
+    block1 = _conv_bn_relu_x2(32,3,3)(input)
     pool1 = MaxPooling2D(pool_size=(2,2))(block1)
     # =========================================================================
-    block2 = _conv_bn_relu_x2(128,3,3)(pool1)
+    block2 = _conv_bn_relu_x2(64,3,3)(pool1)
     pool2 = MaxPooling2D(pool_size=(2, 2))(block2)
     # =========================================================================
-    block3 = _conv_bn_relu_x2(256,3,3)(pool2)
+    block3 = _conv_bn_relu_x2(128,3,3)(pool2)
     pool3 = MaxPooling2D(pool_size=(2, 2))(block3)
     # =========================================================================
-    block4 = _conv_bn_relu_x2(512,3,3)(pool3)
+    block4 = _conv_bn_relu_x2(256,3,3)(pool3)
     up4=concatenate([UpSampling2D(size=(2, 2))(block4), block3],axis=-1)
     # =========================================================================
-    block5 = _conv_bn_relu_x2(256,3,3)(up4)
+    block5 = _conv_bn_relu_x2(128,3,3)(up4)
     up5=concatenate([UpSampling2D(size=(2, 2))(block5), block2],axis=-1)
     # =========================================================================
-    block6 = _conv_bn_relu_x2(128,3,3)(up5)
+    block6 = _conv_bn_relu_x2(64,3,3)(up5)
     up6=concatenate([UpSampling2D(size=(2, 2))(block6), block1],axis=-1)
     # =========================================================================
-    block7 = _conv_bn_relu(64,3,3)(up6)
+    block7 = _conv_bn_relu(32,3,3)(up6)
     return block7
 
 def buildModel_FCRN_A (input_dim):
@@ -149,7 +149,7 @@ def buildModel_FCRN_A_v2 (input_dim):
     model.compile(optimizer = opt, loss = 'mse')
     return model
 
-def buildModel_U_net (input_dim):
+def buildModel_U_net(input_dim):
     input_ = Input (shape = (input_dim))
     # =========================================================================
     act_ = U_net_base (input_, nb_filter = 64)

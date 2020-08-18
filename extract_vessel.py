@@ -4,35 +4,61 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+def extract_vessel_from_oct_origin(img):
+    # Convert into gery scale
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # CLAHE
+    clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8, 8))
+    contrast_enhanced_green_fundus = clahe.apply(img)
+    # Morphology analysis: Three times closing and opening
+    r1 = cv2.morphologyEx(contrast_enhanced_green_fundus, cv2.MORPH_OPEN,
+                          cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)), iterations=1)
+    R1 = cv2.morphologyEx(r1, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)), iterations=1)
+    r2 = cv2.morphologyEx(R1, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11)), iterations=1)
+    R2 = cv2.morphologyEx(r2, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11)), iterations=1)
+    r3 = cv2.morphologyEx(R2, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (23, 23)), iterations=1)
+    R3 = cv2.morphologyEx(r3, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (23, 23)), iterations=1)
+    # Image subtract
+    f4 = cv2.subtract(R3, contrast_enhanced_green_fundus)
+    # CLAHE
+    f5 = clahe.apply(f4)
+    # removing very small contours through area parameter noise removal
+    ret, f6 = cv2.threshold(f5, 15, 255, cv2.THRESH_BINARY)
+    mask = np.ones(f5.shape[:2], dtype="uint8") * 255
+    contours, hierarchy = cv2.findContours(f6.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in contours:
+        if cv2.contourArea(cnt) <= 5:
+            cv2.drawContours(mask, [cnt], -1, 0, -1)
+    # bitwise_and and binarlization
+    im = cv2.bitwise_and(f5, f5, mask=mask)
+    ret, fin = cv2.threshold(im, 15, 255, cv2.THRESH_BINARY_INV)
+    # Erode
+    newfin = cv2.erode(fin, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)), iterations=1)
+    return newfin
+
 
 def extract_vessel_from_oct(img):
     # Convert into gery scale
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = cv2.medianBlur(img, 5)
-    plt.imshow(img)
-    plt.show()
+
     # CLAHE
     clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8, 8))
     contrast_enhanced_green_fundus = clahe.apply(img)
-    plt.imshow(contrast_enhanced_green_fundus)
-    plt.show()
+
     # Morphology analysis: Three times closing and opening
     r1 = cv2.morphologyEx(contrast_enhanced_green_fundus, cv2.MORPH_OPEN,
                           cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)), iterations=1)
-    plt.imshow(r1)
-    plt.show()
+
     R1 = cv2.morphologyEx(r1, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
                           iterations=1)
-    plt.imshow(R1)
-    plt.show()
+
     r2 = cv2.morphologyEx(R1, cv2.MORPH_OPEN,
                           cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)), iterations=1)
-    plt.imshow(r2)
-    plt.show()
+
     R2 = cv2.morphologyEx(r2, cv2.MORPH_CLOSE,
                           cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)), iterations=1)
-    plt.imshow(R2)
-    plt.show()
+
     r3 = cv2.morphologyEx(R2, cv2.MORPH_OPEN,
                           cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15)), iterations=1)
     R3 = cv2.morphologyEx(r3, cv2.MORPH_CLOSE,
@@ -44,9 +70,9 @@ def extract_vessel_from_oct(img):
     # removing very small contours through area parameter noise removal
     ret, f6 = cv2.threshold(f5, 15, 255, cv2.THRESH_BINARY)
     mask = np.ones(f5.shape[:2], dtype="uint8") * 255
-    _, contours, hierarchy = cv2.findContours(f6.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(f6.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
-        if cv2.contourArea(cnt) <= 100:
+        if cv2.contourArea(cnt) <=10:
             cv2.drawContours(mask, [cnt], -1, 0, -1)
     # bitwise_and and binarlization
     im = cv2.bitwise_and(f5, f5, mask=mask)
@@ -60,8 +86,7 @@ def extract_bv(image):
     b, green_fundus, r = cv2.split(image)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(3, 3))
     contrast_enhanced_green_fundus = clahe.apply(green_fundus)
-    plt.imshow(contrast_enhanced_green_fundus)
-    plt.show()
+
     # applying alternate sequential filtering (3 times closing opening)
     r1 = cv2.morphologyEx(contrast_enhanced_green_fundus, cv2.MORPH_OPEN,
                           cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)), iterations=1)
@@ -146,6 +171,14 @@ def gradient_filter(img):
     plt.subplot(2, 2, 4), plt.imshow(sobely, cmap='gray')
     plt.title('Sobel Y'), plt.xticks([]), plt.yticks([])
     plt.show()
+
+def top_hat(img):
+    origin_img = img.copy()
+    img = cv2.erode(img, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)), iterations=1)
+    plt.imshow(origin_img-img)
+    plt.show()
+    return origin_img
+
 
 if __name__ == '__main__':
     folder = './Export GEN Extracted HiMy 20200521/'
