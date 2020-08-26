@@ -94,109 +94,109 @@ if __name__ == '__main__':
         if is_complete:  # ensure the completeness of the imgs-path arr
             result_imgs = os.listdir("./result/")
             if each_image_paths[4] + "stitched.jpg" not in result_imgs:
-                #try:
+                try:
 
-                """
-                Step1:
-                pre-processing to extract vessels from optic images
-                """
+                    """
+                    Step1:
+                    pre-processing to extract vessels from optic images
+                    """
 
-                imgs = []
-                mac_opt_vessel_imgs = []
-                img_list = [path + each_image_paths[1], path + each_image_paths[3]]
-                for i in range(len(img_list)):
-                    img = cv2.imread(img_list[i])
-                    newfin = extract_vessel_from_oct_origin(img)
-                    mac_opt_vessel_imgs.append(newfin)
-                print(each_image_paths)
-                """
-                Step 2:
-                Features searching
-                """
+                    imgs = []
+                    mac_opt_vessel_imgs = []
+                    img_list = [path + each_image_paths[1], path + each_image_paths[3]]
+                    for i in range(len(img_list)):
+                        img = cv2.imread(img_list[i])
+                        newfin = extract_vessel_from_oct_origin(img)
+                        mac_opt_vessel_imgs.append(newfin)
+                    print(each_image_paths)
+                    """
+                    Step 2:
+                    Features searching
+                    """
 
-                ks = 50
-                moving_coors = box_pairing(mac_opt_vessel_imgs[0], mac_opt_vessel_imgs[1], ks, 10, 3)
+                    ks = 50
+                    moving_coors = box_pairing(mac_opt_vessel_imgs[0], mac_opt_vessel_imgs[1], ks, 10, 3, each_image_paths[4])
 
-                for i in range(len(moving_coors)):
-                    moving_coors[i] = int(moving_coors[i])
-                print(moving_coors)
+                    for i in range(len(moving_coors)):
+                        moving_coors[i] = int(moving_coors[i])
+                    print(moving_coors)
 
-                """
-                Step 3:
-                Calcuating the transforming vector and Moving images
-                """
+                    """
+                    Step 3:
+                    Calcuating the transforming vector and Moving images
+                    """
 
-                imgs = []
+                    imgs = []
 
-                # adjust color
-                '''
-                use overlayed area to do color adjustment
-                always use the ONH as the desired histogram, 
-                left[ONH, ONH, Macular, Macular]
-                right[Macular, Macular, ONH, ONH]
-                '''
-                x1, y1, x2, y2 = moving_coors[0], moving_coors[1], moving_coors[2], moving_coors[3]
-                img1 = cv2.imread(path + each_image_paths[0])
-                img2 = cv2.imread(path + each_image_paths[2])
-                if '_L_' in each_image_paths[4]:
-                    onh_img = img1
-                    mac_img = img2
-                    onh_desired_hist_area = img1[y1-y2:250, x1-x2:250]
-                    mac_target_hist_area = img2[:250-x1+x2, :250-y1+y2]
-                    img2 = adjust_color(onh_desired_hist_area, mac_target_hist_area, mac_img)
-                else:
-                    mac_img = img1
-                    onh_img = img2
-                    mac_target_hist_area = img1[y1-y2:250, x1-x2:250]
-                    onh_desired_hist_area = img2[:250-x1+x2, :250-y1+y2]
-                    img1 = adjust_color(onh_desired_hist_area, mac_target_hist_area, mac_img)
+                    # adjust color
+                    '''
+                    use overlayed area to do color adjustment
+                    always use the ONH as the desired histogram, 
+                    left[ONH, ONH, Macular, Macular]
+                    right[Macular, Macular, ONH, ONH]
+                    '''
+                    x1, y1, x2, y2 = moving_coors[0], moving_coors[1], moving_coors[2], moving_coors[3]
+                    img1 = cv2.imread(path + each_image_paths[0])
+                    img2 = cv2.imread(path + each_image_paths[2])
+                    if '_L_' in each_image_paths[4]:
+                        onh_img = img1
+                        mac_img = img2
+                        onh_desired_hist_area = img1[y1-y2:250, x1-x2:250]
+                        mac_target_hist_area = img2[:250-x1+x2, :250-y1+y2]
+                        img2 = adjust_color(onh_desired_hist_area, mac_target_hist_area, mac_img)
+                    else:
+                        mac_img = img1
+                        onh_img = img2
+                        mac_target_hist_area = img1[y1-y2:250, x1-x2:250]
+                        onh_desired_hist_area = img2[:250-x1+x2, :250-y1+y2]
+                        img1 = adjust_color(onh_desired_hist_area, mac_target_hist_area, mac_img)
 
-                imgs = [img1, img2]
-                x1 = 100
-                y1 = 100
-                x2 = 100 + len(imgs[0])
-                y2 = 100
+                    imgs = [img1, img2]
+                    x1 = 100
+                    y1 = 100
+                    x2 = 100 + len(imgs[0])
+                    y2 = 100
 
-                x_movestep = moving_coors[3] + (len(imgs[0][0]) - moving_coors[1])
-                y_movestep = moving_coors[0] - moving_coors[2]
-                canvas = np.ones((800, 600, 3), dtype=np.uint8) * 255
-                if "_L_" in each_image_paths[4]:
-                    canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
-                    canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
-                    x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
-                else:
-                    canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
-                    x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
-                    canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
-                cv2.imwrite("./result/" + each_image_paths[4] + "stitched_adjusted.jpg", canvas)
+                    x_movestep = moving_coors[3] + (len(imgs[0][0]) - moving_coors[1])
+                    y_movestep = moving_coors[0] - moving_coors[2]
+                    canvas = np.ones((800, 600, 3), dtype=np.uint8) * 255
+                    if "_L_" in each_image_paths[4]:
+                        canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
+                        canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
+                        x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
+                    else:
+                        canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
+                        x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
+                        canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
+                    cv2.imwrite("./result/" + each_image_paths[4] + "stitched_adjusted.jpg", canvas)
 
-                ### temp compare, no color adjust
+                    ### temp compare, no color adjust
 
-                img1 = cv2.imread(path + each_image_paths[0])
-                img2 = cv2.imread(path + each_image_paths[2])
+                    img1 = cv2.imread(path + each_image_paths[0])
+                    img2 = cv2.imread(path + each_image_paths[2])
 
-                imgs = [img1, img2]
-                x1 = 100
-                y1 = 100
-                x2 = 100 + len(imgs[0])
-                y2 = 100
+                    imgs = [img1, img2]
+                    x1 = 100
+                    y1 = 100
+                    x2 = 100 + len(imgs[0])
+                    y2 = 100
 
-                x_movestep = moving_coors[3] + (len(imgs[0][0]) - moving_coors[1])
-                y_movestep = moving_coors[0] - moving_coors[2]
-                canvas = np.ones((800, 600, 3), dtype=np.uint8) * 255
-                if "_L_" in each_image_paths[4]:
-                    canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
-                    canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
-                    x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
-                else:
-                    canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
-                    x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
-                    canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
-                cv2.imwrite("./result/" + each_image_paths[4] + "stitched_noadjusted.jpg", canvas)
+                    x_movestep = moving_coors[3] + (len(imgs[0][0]) - moving_coors[1])
+                    y_movestep = moving_coors[0] - moving_coors[2]
+                    canvas = np.ones((800, 600, 3), dtype=np.uint8) * 255
+                    if "_L_" in each_image_paths[4]:
+                        canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
+                        canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
+                        x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
+                    else:
+                        canvas[y2 + y_movestep:y2 + len(imgs[1]) + y_movestep,
+                        x2 - x_movestep:x2 - x_movestep + len(imgs[1][0]), :] = imgs[1]
+                        canvas[y1:y1 + len(imgs[0]), x1:x1 + len(imgs[0][0]), :] = imgs[0]
+                    cv2.imwrite("./result/" + each_image_paths[4] + "stitched_noadjusted.jpg", canvas)
 
-                #except:
-                #    print("error names", each_image_paths[4])
-                 #   error_list.append(each_image_paths[4])
+                except:
+                    print("error names", each_image_paths[4])
+                    error_list.append(each_image_paths[4])
 
         else:
             error_list.append(each_image_paths[4])
