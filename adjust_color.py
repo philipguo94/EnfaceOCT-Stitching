@@ -6,6 +6,7 @@ from numpy import *
 from pylab import *
 from PIL import Image
 
+
 def histeq(im,nbr_bins=256):
     """ 对一幅灰度图像进行直方图均衡化 """
     # 计算图像的直方图
@@ -15,9 +16,15 @@ def histeq(im,nbr_bins=256):
     im2 = interp(im.flatten(),bins[:-1],cdf)
     return im2.reshape(im.shape), cdf
 
-def adjust_color(scr, img0):
-    img0 = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
 
+def adjust_color(scr, img0, img_origin):
+    '''
+    scr: 要转换为的reference area(desired)
+    img0: origin area
+    img_origin: origin image
+    '''
+    img0 = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
+    img_origin = cv2.cvtColor(img_origin, cv2.COLOR_RGB2GRAY)
     img = img0.copy()  # 用于之后做对比图
     scr = cv2.cvtColor(scr, cv2.COLOR_BGR2GRAY)
     mHist1 = []
@@ -78,14 +85,15 @@ def adjust_color(scr, img0):
                     jmin = j
             g.append(jmin)
 
-    for i in range(row):
-        for j in range(col):
-            img[i, j] = g[img[i, j]]
+    # convert the origin image according to the transforming map
+    for i in range(len(img_origin)):
+        for j in range(len(img_origin[0])):
+            img_origin[i, j] = g[img_origin[i, j]]
     clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(5, 5))
     scr = clahe.apply(scr)
     img = clahe.apply(img)
 
-    return cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    return cv2.cvtColor(img_origin, cv2.COLOR_GRAY2RGB)
 
 if __name__ == '__main__':
     img1_path = str('D:\Code\Rota_stitching\Export GEN Extracted HiMy 20200521\CMC 637_20170703_110246_R_Mac\CMC 637_20170703_110246_R_RMapEnSumRNFL_3Resized.png').replace('\\\\', '\\')

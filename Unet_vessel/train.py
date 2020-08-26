@@ -143,11 +143,11 @@ def train_(base_path1, base_path2):
         data, anno = read_data(base_path1, base_path2)
         anno = np.expand_dims(anno, axis=-1)
         data = data / 255.0
-        train_data = data[:int(0.7 * len(data))]
-        train_anno = anno[:int(0.7 * len(data))]
+        train_data = data[:int(0.9 * len(data))]
+        train_anno = anno[:int(0.9 * len(data))]
 
-        val_data = data[int(0.7 * len(data)):]
-        val_anno = anno[int(0.7 * len(data)):]
+        val_data = data[int(0.9 * len(data)):]
+        val_anno = anno[int(0.9 * len(data)):]
 
         datagen = ImageDataGenerator(
             featurewise_center=False,  # set input mean to 0 over the dataset
