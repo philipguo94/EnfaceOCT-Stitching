@@ -1,7 +1,7 @@
 # Rota_stitching
 The repository is to auto stitching ROTA macular and ROTA Optic images automatically.
 
-###Usage
+### Usage
 
 Change the path inside the main.py and run main.py
 
